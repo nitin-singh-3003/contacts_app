@@ -9,12 +9,13 @@
 import UIKit
 
 protocol SettingsProviderProtocol: class {
-    func sortBy(_ sortBy: SortBy)
+    func sortBy(_ sortBy: String)
 }
 
-enum SortBy {
+enum SortBy: String {
     case name
     case number
+    case userDefault
 }
 
 class SettingsViewController: UIViewController {
@@ -27,13 +28,22 @@ class SettingsViewController: UIViewController {
     }
     
     @IBAction func onNameTextClicked() {
+        
         sortingMethod = .name
-        delegate?.sortBy(.name)
+        delegate?.sortBy(SortBy.name.rawValue)
+        
+        
+    }
+    
+    @IBAction func resetUserDefault(_ sender: Any) {
+        delegate?.sortBy(SortBy.userDefault.rawValue)
+        UserDefaults.standard.set("", forKey: "Sorted")
     }
     
     @IBAction func onClickDismiss() {
         self.navigationController?.popViewController(animated: true)
     }
 }
+
 
 

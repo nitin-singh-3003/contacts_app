@@ -1,17 +1,8 @@
-//
-//  ViewController.swift
-//  Contact-app
-//
-//  Created by Nitin Singh on 28/01/20.
-//  Copyright © 2020 Nitin Singh. All rights reserved.
-//
-
 import UIKit
-
 import Contacts
 
 class ViewController: UIViewController {
-
+    
     @IBOutlet weak var tableView: UITableView!
     
     @IBAction func settingBtn(_ sender: Any) {
@@ -20,7 +11,6 @@ class ViewController: UIViewController {
         controller.delegate = self
         self.navigationController?.pushViewController(controller, animated: true)
     }
-    
     
     var contactStore = CNContactStore()
     var contacts = [ContactStruct]()
@@ -38,14 +28,21 @@ class ViewController: UIViewController {
                 print("Authorization Successful")
             }
         }
-        fetchContacts(sortOrder: CNContactSortOrder.userDefault)
+        if UserDefaults.standard.string(forKey: "Sorted") == SortBy.name.rawValue {
+        fetchContacts(sortOrder: CNContactSortOrder.givenName)
+        } else {
+          fetchContacts(sortOrder: CNContactSortOrder.userDefault)
+        }
         
         func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
             
         }
     }
     
-    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(true)
+        tableView.reloadData()
+    }
     
     func fetchContacts(sortOrder: CNContactSortOrder) {
         var newArray : [ContactStruct] = []
@@ -53,16 +50,15 @@ class ViewController: UIViewController {
         let request = CNContactFetchRequest(keysToFetch: keys)
         request.sortOrder = sortOrder
         let store = CNContactStore()
-    do {
+        do {
             try store.enumerateContacts(with: request, usingBlock: { (contact, stop) -> Void in
-              //  print(contact.phoneNumbers.first?.value ?? "not found")
-
-            })
+                //  print(contact.phoneNumbers.first?.value ?? "not found")
+                })
         }
         catch let error as NSError {
             print(error.localizedDescription)
         }
-         try? contactStore.enumerateContacts(with: request) { (contact, stoppingPointer) in
+        try? contactStore.enumerateContacts(with: request) { (contact, stoppingPointer) in
             
             let name = contact.givenName
             let number = contact.phoneNumbers.first?.value.stringValue
@@ -74,25 +70,24 @@ class ViewController: UIViewController {
         self.contacts = newArray
         tableView.reloadData()
         print(contacts.first?.name ?? "contacts first name not found")
-        }
+    }
     
     func saveContact(){
         do{
             let contact = CNMutableContact()
-        contact.givenName = name ?? "Nil"
-        contact.phoneNumbers = [CNLabeledValue(
-            label:CNLabelPhoneNumberiPhone,
-            value:CNPhoneNumber(stringValue:phoneNumber ?? "NILL")),
-                  CNLabeledValue(
+            contact.givenName = name ?? "Nil"
+            contact.phoneNumbers = [CNLabeledValue(
                 label:CNLabelPhoneNumberiPhone,
-                value:CNPhoneNumber(stringValue:phoneNumber ?? "NILL"))]
-        let saveRequest = CNSaveRequest()
+                value:CNPhoneNumber(stringValue:phoneNumber ?? "NILL")),
+                                    CNLabeledValue(
+                                        label:CNLabelPhoneNumberiPhone,
+                                        value:CNPhoneNumber(stringValue:phoneNumber ?? "NILL"))]
+            let saveRequest = CNSaveRequest()
             saveRequest.add(contact, toContainerWithIdentifier:nil)
             try contactStore.execute(saveRequest)
             print("saved")
-
-        }
-
+            }
+            
         catch{
             print("error")
         }
@@ -102,17 +97,17 @@ class ViewController: UIViewController {
 extension ViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-          return contacts.count
-     }
+        return contacts.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
+        let contactToDisplay = contacts[indexPath.row]
         
-     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-         let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
-         let contactToDisplay = contacts[indexPath.row]
-        
-         cell.textLabel?.text = contactToDisplay.name
-         cell.detailTextLabel?.text = contactToDisplay.number
-         return cell
-     }
+        cell.textLabel?.text = contactToDisplay.name
+        cell.detailTextLabel?.text = contactToDisplay.number
+        return cell
+    }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let detailVc = setupVC()
@@ -125,17 +120,23 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
         self.navigationController?.pushViewController(controller, animated: true)
         return controller
     }
-    
+
 }
 
 extension ViewController : SettingsProviderProtocol {
-    func sortBy(_ sortBy: SortBy) {
+    
+    func sortBy(_ sortBy: String) {
+        
+        UserDefaults.standard.set(sortBy, forKey: "Sorted")
         switch sortBy {
-        case .name:
+        case "name":
             fetchContacts(sortOrder: CNContactSortOrder.givenName)
+            
             self.tableView.reloadData()
-        case .number:
+        case "number":
             break
+            
+        default: fetchContacts(sortOrder: CNContactSortOrder.userDefault)
         }
     }
     
@@ -146,25 +147,24 @@ extension ViewController : SettingsProviderProtocol {
             name = viewController.nameTextField.text
             phoneNumber = viewController.numberTextField.text
             self.saveContact()
-            let contact = ContactStruct(name: (name ?? ""), number: (phoneNumber ?? ""))
-            contacts.append(contact)
+            //let contact = ContactStruct(name: (name ?? ""), number: (phoneNumber ?? ""))
+            //contacts.append(contact)
+            self.fetchContacts(sortOrder: .givenName)
         
         }else{
             print("Invalid Data")
         }
-        
-        
         }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "contactDetailSegue" {
-            guard let viewController = segue.destination as? showDetailViewController else{return}
+            guard let viewController = segue.destination as? showDetailViewController else {return}
             guard let indexPath = tableView.indexPathForSelectedRow else{return}
             let contact = contacts[indexPath.row]
             viewController.contact = contact
             
         }
     }
-    }
-    
+}
+
 

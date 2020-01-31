@@ -1,10 +1,3 @@
-//
-//  showDetailViewController.swift
-//  Contacts
-//
-//  Created by Nitin Singh on 30/01/20.
-//  Copyright © 2020 Nitin Singh. All rights reserved.
-//
 
 import UIKit
 
@@ -29,3 +22,4 @@ class showDetailViewController: UIViewController {
     
     @IBOutlet weak var phoneLabel: UILabel!
 }
+
